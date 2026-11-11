@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: teamforge_postgres
+    environment:
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: teamforge_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev_user -d teamforge_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  matching-service:
+    build:
+      context: ../apps/matching-service
+      dockerfile: Dockerfile
+    container_name: teamforge_matching
+    environment:
+      PORT: 8001
+    ports:
+      - "8001:8001"
+  core-api:
+    build:
+      context: ..
+      dockerfile: apps/core-api/Dockerfile
+    container_name: teamforge_core_api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      matching-service:
+        condition: service_started
+    environment:
+      DATABASE_URL: "postgresql://dev_user:dev_password@postgres:5432/teamforge_db?schema=public"
+      MATCHING_SERVICE_URL: "http://matching-service:8001"
+      JWT_SECRET: "development_secret_key_123"
+      PORT: 8000
+    ports:
+      - "8000:8000"
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    container_name: teamforge_web
+    depends_on:
+      - core-api
+    environment:
+      NEXT_PUBLIC_API_URL: "http://localhost:8000"
+    ports:
+      - "3000:3000"
+volumes:
+  pgdata:

@@ -1,0 +1,11 @@
+{
+  "name": "@teamforge/core-api",
+  "version": "0.0.0",
+  "private": true,
+  "devDependencies": {
+    "@teamforge/tsconfig": "workspace:*"
+  },
+  "dependencies": {
+    "@teamforge/shared-types": "workspace:*"
+  }
+}
