@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String @id @default(uuid())
+  email        String @unique
+  name         String
+  passwordHash String
+  skills       String[]
+  ambition     Int @default(8)
+  availability Json
+  memberships  Membership[]
+  ownedTeams   Team[]
+  applications Application[]
+  notices      Notice[]
+}
+
+model Team {
+  id             String @id @default(uuid())
+  name           String
+  description    String
+  requiredSkills String[]
+  capacity       Int
+  ownerId        String
+  owner          User @relation(fields: [ownerId], references: [id])
+  members        Membership[]
+  applications   Application[]
+  createdAt      DateTime @default(now())
+}
+
+model Membership {
+  userId String @unique
+  teamId String
+  user   User @relation(fields: [userId], references: [id])
+  team   Team @relation(fields: [teamId], references: [id])
+  @@id([userId, teamId])
+}
+
+model Application {
+  id        String @id @default(uuid())
+  teamId    String
+  userId    String
+  kind      String @default("APPLICATION")
+  status    String @default("PENDING")
+  team      Team @relation(fields: [teamId], references: [id])
+  user      User @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  @@unique([teamId, userId])
+}
+
+model Notice {
+  id        String @id @default(uuid())
+  userId    String
+  user      User @relation(fields: [userId], references: [id])
+  message   String
+  createdAt DateTime @default(now())
+}
