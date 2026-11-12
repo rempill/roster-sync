@@ -19,6 +19,7 @@ export function attachRealtime(server: HttpServer, verify: (token: string) => Pr
     socket.join("user:" + socket.data.userId);
   });
   return {
+    teamUpdated: (teamId: string) => io.emit("team.updated", { teamId }),
     close: () => io.close(),
   };
 }
