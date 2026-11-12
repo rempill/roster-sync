@@ -6,6 +6,7 @@
     "@teamforge/tsconfig": "workspace:*"
   },
   "dependencies": {
-    "@teamforge/shared-types": "workspace:*"
+    "@teamforge/shared-types": "workspace:*",
+    "socket.io": "4.8.1"
   }
 }
