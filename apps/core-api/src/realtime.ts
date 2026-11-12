@@ -20,6 +20,7 @@ export function attachRealtime(server: HttpServer, verify: (token: string) => Pr
   });
   return {
     teamUpdated: (teamId: string) => io.emit("team.updated", { teamId }),
+    notify: (userId: string, notice: unknown) => io.to("user:" + userId).emit("notification", notice),
     close: () => io.close(),
   };
 }
