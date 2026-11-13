@@ -1,6 +1,9 @@
 [project]
 name = "teamforge-matching-service"
 version = "0.0.0"
-description = "Matching service scaffold; implementation pending."
+description = "Matching service and schedule ingestion utilities."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "icalendar",
+    "recurring-ical-events",
+]

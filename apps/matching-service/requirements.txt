@@ -1,1 +1,2 @@
-# Add Python runtime dependencies when implementing the service.
+icalendar
+recurring-ical-events
