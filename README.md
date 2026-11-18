@@ -1,73 +1,162 @@
-# Engineering Plan: Team Formation & Scheduling Platform
+# RosterSync
+
+**Algorithmic Team Formation & Multi-Constraint Schedule Optimization Platform**
+
+RosterSync replaces fragmented university group chats and static bulletin boards with an automated, constraint-driven team-formation engine. The platform solves the NP-hard problem of assembling balanced academic project teams by programmatically resolving schedule overlaps, skill complementarity, and academic target ambitions.
 
 ---
 
-### Core Technical Challenges to Present
+## Architecture Overview
 
-1. **Automated Schedule Intersection Engine:**
-* Ingesting academic calendars (`.ics` files, Google Calendar sync, or university timetable scraping).
-* Computing temporal overlaps using bitmask operations or interval trees to determine true mutual working windows across $N$ students in real time.
+RosterSync uses a service-oriented monorepo managed via **Turborepo** and **pnpm workspaces**, cleanly separating transactional business logic from computational optimization routines.
+
+```
+                              ┌────────────────────────┐
+                              │    Next.js 15 SPA      │
+                              │      (Port 3000)       │
+                              └───────────┬────────────┘
+                                          │ HTTPS / WSS
+                                          ▼
+                              ┌────────────────────────┐
+                              │     Core API Layer     │
+                              │    (NestJS Gateway)    │
+                              │      (Port 8000)       │
+                              └─────┬────────────┬─────┘
+                                    │            │
+                Internal HTTP / RPC │            │ Prisma ORM
+                                    ▼            ▼
+    ┌─────────────────────────────────┐   ┌───────────────────────────┐
+    │     Matching & Schedule Engine  │   │   PostgreSQL Database     │
+    │        (Python / FastAPI)       │   │        (Port 5432)        │
+    │           (Port 8001)           │   └───────────────────────────┘
+    └─────────────────────────────────┘
+
+```
+
+### Core Technical Pillars
+
+1. **Temporal Overlap & Schedule Bitmasking:**
+Ingests `.ics` university timetables and personal calendars, maps weekly availability to discrete bit vectors, and calculates instant common free windows across $N$-member candidate pools using bitwise intersection operations.
+2. **Multi-Constraint Optimization Engine:**
+Calculates real-time candidate-team compatibility scores using a weighted scoring formula:
+
+$$\text{Compatibility} = w_1 \cdot S_{\text{schedule}} + w_2 \cdot S_{\text{skills}} + w_3 \cdot S_{\text{ambition}}$$
 
 
-2. **Multi-Constraint Matching Algorithm:**
-* A scoring engine implementing a weighted bipartite matching / knapsack formulation:
+3. **Atomic Concurrency Controls:**
+Employs PostgreSQL row-level pessimistic locking (`SELECT ... FOR UPDATE`) to eliminate race conditions when multiple candidates apply simultaneously for a team's final open vacancy.
 
-$$\text{Compatibility Score} = w_1 \cdot S_{\text{schedule}} + w_2 \cdot S_{\text{skills}} + w_3 \cdot S_{\text{ambition}}$$
+---
+
+## Tech Stack
+
+| Layer | Technology | Purpose |
+| --- | --- | --- |
+| **Monorepo** | Turborepo, pnpm | Task pipeline orchestration, local caching, workspace management |
+| **Frontend** | Next.js 15 (App Router), React, Tailwind CSS, shadcn/ui | Dynamic visual schedule heatmap, team-building canvas |
+| **Core API Gateway** | NestJS, TypeScript, Prisma ORM, Socket.io | JWT auth, role validation, team lifecycle, real-time WebSocket state |
+| **Matching Microservice** | FastAPI, Python 3.11, NumPy, SciPy, icalendar | Interval tree intersections, matrix compatibility calculations |
+| **Database** | PostgreSQL 16 | ACID transactional guarantees, relational integrity |
+| **DevOps & CI/CD** | Docker, Docker Compose, GitHub Actions | Multi-container orchestration, PR validation pipelines |
+
+---
+
+## Repository Structure
+
+```text
+rostersync/
+├── .github/workflows/         # CI pipelines (lint, typecheck, unit tests)
+├── apps/
+│   ├── web/                   # Next.js 15 Frontend Client
+│   ├── core-api/              # NestJS Gateway & WebSocket Server
+│   └── matching-service/      # Python/FastAPI Optimization Engine
+├── packages/
+│   ├── shared-types/          # Shared TypeScript interfaces
+│   └── tsconfig/              # Shared compiler configs
+├── deployments/
+│   └── docker-compose.yml     # Multi-container local orchestration
+├── pnpm-workspace.yaml
+├── turbo.json
+└── package.json
+
+```
+
+---
+
+## Engineering Team & Ownership
+
+| Engineer | Focus Area | Key Deliverables |
+| --- | --- | --- |
+| **Engineer 1** | Optimization & Matching Lead | Scoring heuristics, vector similarity for skills, matching algorithms |
+| **Engineer 2** | Scheduling & Calendar Ingestion | `.ics` parsing pipeline, availability bitmasking, schedule overlap matrix |
+| **Engineer 3** | Core Backend & Data Architect | Relational database schema, institutional auth, atomic vacancy locks |
+| **Engineer 4** | Real-Time State & Communications | WebSocket infrastructure, live notification feeds, invite lifecycles |
+| **Engineer 5** | Frontend Lead & UX Architect | Schedule conflict heatmap, team management dashboard, responsive UI |
+| **Engineer 6** | DevOps, Testing & CI/CD | Docker environments, automated GitHub Actions pipelines, load testing |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+* [Node.js](https://nodejs.org/) `>= 20.x`
+* [pnpm](https://pnpm.io/) `>= 9.x`
+* [Docker](https://www.docker.com/) and Docker Compose
+* [Python](https://www.python.org/) `>= 3.11` (for local matching service development)
+
+### Quickstart (Docker Orchestration)
+
+1. Clone the repository:
+```bash
+git clone https://github.com/<your-org>/rostersync.git
+cd rostersync
+
+```
 
 
-* Balances hard constraints (identical course enrollment, maximum team capacity) with soft constraints (complementary tech stacks, schedule overlap, target grades).
+2. Boot the entire infrastructure via Docker Compose:
+```bash
+docker compose -f deployments/docker-compose.yml up --build
+
+```
 
 
-3. **Concurrency & Race Conditions:**
-* Atomic operations and database locks to handle simultaneous join requests when an open team has only one remaining slot.
+3. Access local services:
+* **Web Client:** [http://localhost:3000](http://localhost:3000)
+* **Core API Gateway:** [http://localhost:8000](http://localhost:8000)
+* **Matching Service Docs:** [http://localhost:8001/docs](http://localhost:8001/docs)
+
+
+
+### Local Development (Bare Metal)
+
+1. Install root dependencies:
+```bash
+pnpm install
+
+```
+
+
+2. Start PostgreSQL:
+```bash
+docker compose -f deployments/docker-compose.yml up postgres -d
+
+```
+
+
+3. Run Turborepo development pipeline:
+```bash
+pnpm dev
+
+```
 
 
 
 ---
 
-## 2. Six-Engineer Work Division & Architecture
+## Delivery Roadmap
 
-To avoid overlapping workflows, the architecture is decoupled into six distinct engineering domains:
-
-| Role | Core Domain & Responsibilities | Suggested Stack | Resume Impact Headline |
-| --- | --- | --- | --- |
-| **Engineer 1: Optimization & Matching Lead** | Heuristic constraint solver, scoring weights, vector similarity for skills, auto-matching engine. | Python (FastAPI / NumPy) or Go | *Designed and benchmarked a multi-constraint optimization engine for automated team formation.* |
-| **Engineer 2: Scheduling & Ingestion Engine** | Calendar ingestion (`.ics` parser, Google Calendar API), availability bitmasking, schedule overlap matrix. | Node.js, Go, or Python | *Built a high-throughput temporal overlap engine calculating common availability across multi-user graphs.* |
-| **Engineer 3: Data Architect & Core Backend** | Relational schema design, entity lifecycles, institutional authentication (`@stud.ubbcluj.ro` SSO), atomic join locks. | PostgreSQL, Prisma, NestJS / Spring Boot | *Architected scalable relational schemas, role-based auth, and pessimistic locking for concurrent team joins.* |
-| **Engineer 4: Real-Time State & Communications** | WebSocket infrastructure for team invites, real-time application status, push notifications. | WebSockets, Socket.io, Redis Pub/Sub | *Engineered real-time state synchronization and event messaging for distributed user collaboration.* |
-| **Engineer 5: Frontend Lead & UX Architect** | Dynamic team formation canvas, schedule heatmap visualizer, progressive onboarding, responsive UI. | Next.js, React, Tailwind CSS, TanStack Query | *Built a responsive SPA featuring real-time schedule conflict heatmaps and dynamic team-building flows.* |
-| **Engineer 6: DevOps, Testing & CI/CD** | Containerization, automated CI/CD pipelines, load testing, automated synthetic data generation for benchmarks. | Docker, GitHub Actions, k6, AWS / Render | *Architected automated CI/CD pipelines, containerized microservices, and end-to-end API load tests.* |
-
----
-
-## 3. Phased Delivery Roadmap
-
-### Demo 1: Core Architecture & Visual Schedule Overlap (MVP)
-
-* **Institutional Verification:** Restrict account creation to institutional domains (`@stud.ubbcluj.ro`).
-* **Taxonomy & Profiles:** Pre-populated course lists, roles (Frontend, Backend, Mobile, DevOps, ML), and target grade preferences (e.g., "Pass only" vs. "Max grade / 10").
-* **Interactive Availability Grid:** Visual weekly availability editor with immediate `.ics` calendar import.
-* **Smart Team Postings:** Teams post specific vacancy slots (e.g., *"Need 1 Backend Dev with >= 4 hours overlap on Thursdays/Fridays"*).
-* **Schedule Overlap Inspector:** Instant visual heatmap when viewing a team: *"Your schedule overlaps 8.5 hours/week with this group."*
-
-### Demo 2: Algorithmic Matching Hook
-
-* **Match Score Calculation:** Automated percentage match indicator on all team listings based on skill gaps and shared free time.
-* **"Find My Team" Auto-Ranker:** A single-click query returning the top 5 compatible teams with plain-text justifications (*"Fills their open React slot; 6 overlapping hours on weekends"*).
-* **Application & Atomic Join Flow:** Team owners approve/reject candidates; database transactions automatically close listings upon reaching capacity.
-
-### Final Presentation: Scale & Differentiation
-
-* **Cohort-Wide Auto-Grouping ("The Professor Mode"):** Administrative utility where an instructor imports a list of unassigned students and the algorithm partitions them into balanced teams.
-* **Real-Time Notification Pipeline:** WebSocket alerts when invited, accepted, or when open slots decrease.
-* **Official Export System:** One-click roster generation exporting team composition to CSV/Excel following official faculty submission templates.
-* **Empirical Benchmarks:** Performance graphs demonstrating matching algorithm latency across 100, 500, and 2,000 synthetic student profiles.
-
----
-
-## 5. Immediate Action Plan
-
-1. **Tech Stack Selection:** Confirm the backend language (FastAPI recommended for rapid optimization prototyping; NestJS/Go for strict typing) and frontend framework (Next.js 15+).
-2. **Assign Core Roles:** Map each of the 6 team members to one of the specific domains defined above.
-3. **Define Algorithm Constraints:** Formalize the input schema (skills, course, availability matrix) to establish clean API contracts between frontend and backend leads.
-4. **Initialize Repository:** Configure branch protection, Docker Compose environments, and project management boards (Linear / GitHub Projects).
+* **Demo 1 (MVP):** Institutional auth (`@stud.ubbcluj.ro`), profile taxonomy, `.ics` calendar import, interactive availability grid, manual team postings with visual schedule overlap heatmaps.
+* **Demo 2:** Automated compatibility scoring engine, 1-click "Find My Team" algorithmic ranking, atomic applicant approval and vacancy auto-close.
+* **Final Presentation:** Professor cohort-wide automatic team partitioning, WebSocket event notifications, official roster CSV export, and algorithm performance benchmarks on synthetic student cohorts.

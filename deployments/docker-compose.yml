@@ -15,8 +15,8 @@ services:
       retries: 20
   matching:
     build:
-      context: ..
-      dockerfile: branch1/Dockerfile
+      context: ../apps/matching-service
+      dockerfile: Dockerfile
     ports:
       - "127.0.0.1:${MATCHING_PORT:-8001}:8001"
     healthcheck:
@@ -27,7 +27,7 @@ services:
   core:
     build:
       context: ..
-      dockerfile: branch3/Dockerfile
+      dockerfile: apps/core-api/Dockerfile
     environment:
       DATABASE_URL: postgresql://demo:demo_local_password@postgres:5432/rostersync?schema=public
       JWT_SECRET: local_demo_secret_rostersync_2026_replace_for_production
@@ -50,7 +50,7 @@ services:
   web:
     build:
       context: ..
-      dockerfile: branch5/Dockerfile
+      dockerfile: apps/web/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-8000}
     ports:
