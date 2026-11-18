@@ -10,9 +10,9 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 1080 } });
 const failures = [];
 page.on("pageerror", error => failures.push(error.message));
 try {
-  await page.goto("http://localhost:3000");
+  await page.goto(process.env.WEB_URL || "http://localhost:3000");
   await page.getByRole("button", { name: "Explore the demo" }).click();
-  await page.getByRole("heading", { name: "Find your people." }).waitFor();
+  await page.getByRole("heading", { name: "Find your project team" }).waitFor();
   await page.getByText("Live updates", { exact: true }).waitFor();
   assert(await page.getByRole("heading", { name: "StudyFlow", exact: true }).count());
   await page.screenshot({ path: artifacts + "dashboard-desktop.png", fullPage: true });
@@ -22,7 +22,7 @@ try {
   await page.getByLabel("University email", { exact: true }).fill("browsertest" + Date.now() + "@stud.ubbcluj.ro");
   await page.getByLabel("Password", { exact: true }).fill("Test12345!");
   await page.getByRole("button", { name: "Create account", exact: true }).click();
-  await page.getByRole("heading", { name: "Find your people." }).waitFor();
+  await page.getByRole("heading", { name: "Find your project team" }).waitFor();
   await page.getByRole("textbox", { name: "Search teams" }).fill("Campus Connect");
   assert.equal(await page.locator(".team-card").count(), 1);
   await page.getByRole("textbox", { name: "Search teams" }).fill("");

@@ -3,11 +3,11 @@ import { createRequire } from "node:module";
 import { readFile, writeFile } from "node:fs/promises";
 const require = createRequire("/app/package.json");
 const { io } = require("socket.io-client");
-const base = "http://localhost:8000";
+const base = process.env.API_URL || "http://localhost:8000";
 let checks = 0;
 const passed = label => { checks++; console.log("PASS " + label); };
 async function request(path, token, method = "GET", body, expected = 200) {
-  const response = await fetch(base + path, { method, headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
+  const response = await fetch(base + path, { signal: AbortSignal.timeout(10000), method, headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
   const json = await response.json();
   assert.equal(response.status, expected, path + ": " + JSON.stringify(json));
   return json;
@@ -68,7 +68,7 @@ async function run() {
   assert.deepEqual(imported.availability.slice(20, 24), [0, 0, 0, 0]);
   assert.equal((await request("/me", first.token)).availability[20], 0);
   await request("/calendar/import", first.token, "POST", { ics: "bad calendar", weekStart: "2026-11-09" }, 400);
-  passed("Calendar import across branch2, branch1 and branch3 persists busy slots");
+  passed("Calendar import through API and matching service persists busy slots");
 
   const ranking = await request("/teams/rank", first.token);
   assert(ranking.length >= 3);
@@ -108,7 +108,7 @@ async function run() {
   assert.equal(privateLeaks, 0);
   passed("Applications, ownership checks, scoped request access and private notifications");
 
-  const approve = id => fetch(base + "/applications/" + id + "/approve", { method: "POST", headers: { Authorization: "Bearer " + owner.token, "Content-Type": "application/json" }, body: "{}" });
+  const approve = id => fetch(base + "/applications/" + id + "/approve", { signal: AbortSignal.timeout(10000), method: "POST", headers: { Authorization: "Bearer " + owner.token, "Content-Type": "application/json" }, body: "{}" });
   const responses = await Promise.all([approve(application1.id), approve(application2.id)]);
   assert.deepEqual(responses.map(r => r.status).sort(), [201, 409]);
   const after = (await request("/teams", owner.token)).find(t => t.id === team.id);
@@ -136,7 +136,7 @@ async function run() {
   assert((await request("/notifications", invited.token)).length >= 2);
   passed("Invitation owner and recipient authorization, acceptance and persisted activity feed");
 
-  const web = await fetch("http://web:3000");
+  const web = await fetch(process.env.WEB_URL || "http://web:3000", { signal: AbortSignal.timeout(10000) });
   assert.equal(web.status, 200);
   const html = await web.text();
   assert(html.includes("RosterSync") && html.includes("/_next/static/") && html.includes("Loading RosterSync"));

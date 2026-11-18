@@ -6,7 +6,8 @@ try {
   const users = await db.user.findMany({ select: { id: true, name: true, email: true } });
   const ids = users.filter(user =>
     (/^(owner|first|second|observer|inviteowner|invited)\d{13}@stud\.ubbcluj\.ro$/.test(user.email) && /^(owner|first|second|observer|inviteowner|invited) Test$/.test(user.name)) ||
-    (/^browsertest\d{13}@stud\.ubbcluj\.ro$/.test(user.email) && user.name === "Browser Student")
+    (/^browsertest\d{13}@stud\.ubbcluj\.ro$/.test(user.email) && user.name === "Browser Student") ||
+    (/^integration-[0-2]-\d{13}-[a-f0-9]+@stud\.ubbcluj\.ro$/.test(user.email) && ["Owner", "Candidate A", "Candidate B"].includes(user.name))
   ).map(user => user.id);
   const teams = await db.team.findMany({ where: { ownerId: { in: ids } }, select: { id: true } });
   const teamIds = teams.map(team => team.id);

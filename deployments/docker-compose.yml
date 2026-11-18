@@ -1,4 +1,4 @@
-name: rostersync-demo
+name: rostersync-share
 services:
   postgres:
     image: postgres:16-alpine
@@ -18,10 +18,7 @@ services:
       context: ..
       dockerfile: branch1/Dockerfile
     ports:
-      - "127.0.0.1:8001:8001"
-    volumes:
-      - ../branch1/test_matching.py:/app/test_matching.py:ro
-      - ../branch2/test_scheduling.py:/app/test_scheduling.py:ro
+      - "127.0.0.1:${MATCHING_PORT:-8001}:8001"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=2)"]
       interval: 5s
@@ -37,12 +34,9 @@ services:
       MATCHING_SERVICE_URL: http://matching:8001
       DEMO_SEED: "true"
       PORT: 8000
-      WEB_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      WEB_ORIGINS: http://localhost:${WEB_PORT:-3000},http://127.0.0.1:${WEB_PORT:-3000}
     ports:
-      - "127.0.0.1:8000:8000"
-    volumes:
-      - ./checks:/app/checks:ro
-      - ../branch2/demo-calendar.ics:/app/demo-calendar.ics:ro
+      - "127.0.0.1:${API_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,9 +52,9 @@ services:
       context: ..
       dockerfile: branch5/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8000
+        NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-8000}
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
     depends_on:
       core:
         condition: service_healthy

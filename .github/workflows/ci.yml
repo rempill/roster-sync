@@ -4,13 +4,19 @@ on:
   push:
     paths:
       - "branch*/**"
+      - ".github/workflows/demo.yml"
   pull_request:
     paths:
       - "branch*/**"
+      - ".github/workflows/demo.yml"
+concurrency:
+  group: share-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
   demo:
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,6 +26,12 @@ jobs:
       - run: docker compose -f branch6/compose.yml up --build -d --wait --wait-timeout 180
       - run: docker compose -f branch6/compose.yml exec -T matching python -m unittest -v test_matching test_scheduling
       - run: docker compose -f branch6/compose.yml exec -T core node checks/integration.mjs
+      - run: docker compose -f branch6/compose.yml exec -T core npm test
+      - run: |
+          docker compose -f branch6/compose.yml restart core
+          docker compose -f branch6/compose.yml up -d --wait --wait-timeout 180
+          docker compose -f branch6/compose.yml exec -T core node checks/integration.mjs --persistence
+          docker compose -f branch6/compose.yml exec -T core node checks/cleanup.mjs
       - run: npm ci --prefix branch6
       - run: node branch6/node_modules/playwright/cli.js install --with-deps chromium --only-shell
       - run: node branch6/checks/browser.mjs
